@@ -1,0 +1,38 @@
+{
+  "name": "testbench-api",
+  "description": "Testbench public API (FastAPI) — owns the DB schema",
+  "repository": "https://github.com/<org>/testbench-api",
+  "keywords": ["fastapi", "python", "testbench"],
+  "stack": "heroku-24",
+  "buildpacks": [
+    { "url": "heroku/python" }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "env": {
+    "DATABASE_URL": {
+      "description": "Postgres connection string. Shared database provisioned on testbench-api; testbench-pipeline uses the same value.",
+      "required": true
+    },
+    "JWT_SECRET": {
+      "description": "Signing secret for issued JWTs.",
+      "required": true
+    },
+    "R2_ACCOUNT_ID": {
+      "description": "Cloudflare R2 account ID for object storage.",
+      "required": true
+    },
+    "R2_ACCESS_KEY": {
+      "description": "Cloudflare R2 access key.",
+      "required": true
+    },
+    "CLOUDFLARE_WORKER_TRIGGER_URL": {
+      "description": "URL of the Cloudflare Worker that triggers downstream processing.",
+      "required": true
+    }
+  }
+}

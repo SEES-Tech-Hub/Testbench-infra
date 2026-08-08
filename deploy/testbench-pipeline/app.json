@@ -1,0 +1,58 @@
+{
+  "name": "testbench-pipeline",
+  "description": "Testbench OCR/LLM extraction service (Node/Express)",
+  "repository": "https://github.com/<org>/testbench-pipeline",
+  "keywords": ["node", "express", "testbench"],
+  "stack": "heroku-24",
+  "buildpacks": [
+    { "url": "heroku/nodejs" }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "env": {
+    "DATABASE_URL": {
+      "description": "Postgres connection string. Same database as testbench-api — provisioned there and shared, not reprovisioned here.",
+      "required": true
+    },
+    "R2_ACCOUNT_ID": {
+      "description": "Cloudflare R2 account ID for object storage.",
+      "required": true
+    },
+    "R2_ACCESS_KEY": {
+      "description": "Cloudflare R2 access key.",
+      "required": true
+    },
+    "R2_SECRET_KEY": {
+      "description": "Cloudflare R2 secret key.",
+      "required": true
+    },
+    "OCR_API_KEY": {
+      "description": "Azure AI Services (Document Intelligence) subscription key, used for OCR.",
+      "required": true
+    },
+    "AZURE_OCR_ENDPOINT": {
+      "description": "Azure AI Services resource endpoint, e.g. https://<resource>.cognitiveservices.azure.com/",
+      "required": true
+    },
+    "AZURE_OCR_REGION": {
+      "description": "Azure region of the Cognitive Services resource, e.g. southafricanorth.",
+      "required": true
+    },
+    "GROQ_API_KEY": {
+      "description": "API key for Groq-hosted LLM inference.",
+      "required": true
+    },
+    "VISION_LLM_API_KEY": {
+      "description": "Azure AI Services subscription key for cloud vision/image analysis (same resource as OCR_API_KEY).",
+      "required": true
+    },
+    "CONFIDENCE_THRESHOLD": {
+      "description": "Minimum confidence score (0-1) required to accept an extraction result without flagging for review.",
+      "required": true
+    }
+  }
+}
