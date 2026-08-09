@@ -1,9 +1,13 @@
 # Heroku Deploy Guide — testbench-pipeline
 
-For whoever's deploying testbench-pipeline for the first time. Covers the crash
+For whoever's deploying testbench-pipeline for the first time. Covers the crashes
 currently blocking the app, plus general Heroku basics.
 
-## The current crash — read this first
+**Status as of the latest deploy (v9):** still crashing, but progress — the original
+boot-level crash (Issue 1 below) cleared on its own, and the dyno now gets far enough
+to hit a real TypeScript error (Issue 2 below). Fix both before the next deploy.
+
+## Issue 1: ts-node version-drift crash on boot
 
 Looking at `heroku logs -a testbench-pipeline`, the last deploy built successfully
 but the dyno crashes immediately on boot with:
@@ -81,6 +85,50 @@ also faster on every boot.
 If it still crashes after this, check that `src/server.ts` binds to
 `process.env.PORT` (Heroku assigns this dynamically — a hardcoded port like `3000`
 will fail health checks even if the process itself starts fine).
+
+## Issue 2: missing `@types/express`
+
+Once Issue 1's flakiness clears (it did on your latest deploy), the dyno gets far
+enough to actually type-check `src/server.ts`, and now fails with a real TypeScript
+error:
+
+```
+src/server.ts(1,21): error TS7016: Could not find a declaration file for module 'express'.
+Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file...
+src/server.ts(16,21): error TS7006: Parameter 'req' implicitly has an 'any' type.
+src/server.ts(16,26): error TS7006: Parameter 'res' implicitly has an 'any' type.
+```
+
+`@types/express` isn't installed, so TypeScript doesn't know the shape of `express`'s
+exports — which cascades into `req`/`res` failing strict-mode implicit-`any` checks
+too (fixing the missing declaration file fixes all three errors at once).
+
+**This needs fixing regardless of whether you do the Issue 1 fix** — it's a real
+compile error that `tsc` will hit whether it runs at build time (if you switch to
+compile-then-run) or at boot time (if you stay on `ts-node`).
+
+### Fix
+
+```
+npm install --save @types/express
+```
+
+Important: use `--save` (regular dependency), **not** `--save-dev`. Heroku's build
+runs with `NODE_ENV=production`, which skips devDependencies — and `ts-node`/`tsc`
+needs this type declaration available at either build time or boot time, both of
+which run in that production environment.
+
+Then commit and redeploy:
+
+```
+git add package.json package-lock.json
+git commit -m "Add missing @types/express dependency"
+git push heroku main
+```
+
+If other type errors show up after this (e.g. for `cors`, `multer`, or other
+libraries you're using without their own bundled types), the same pattern applies:
+`npm install --save @types/<package-name>`.
 
 ## Heroku basics (first-time setup)
 
