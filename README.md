@@ -90,7 +90,7 @@ deploy/testbench-pipeline/.env.example
 | `JWT_SECRET` | ✅ set (generated, `openssl rand -hex 32`) |
 | `R2_ACCOUNT_ID` | ✅ set |
 | `R2_ACCESS_KEY` | ✅ set |
-| `CLOUDFLARE_WORKER_TRIGGER_URL` | ⏳ **placeholder — not set.** This is the URL of a Cloudflare Worker that doesn't exist yet. Once that Worker is written and deployed (`wrangler deploy`), set it with: `heroku config:set CLOUDFLARE_WORKER_TRIGGER_URL=<url> -a testbench-api` |
+| `CLOUDFLARE_WORKER_TRIGGER_URL` | ✅ set — `https://testbench-worker.bdev5592.workers.dev` (see [Cloudflare Worker](#cloudflare-worker) below) |
 
 ### testbench-pipeline
 
@@ -119,6 +119,42 @@ notation (subscripts, exponents, scientific units) often scored 0.7–0.9 despit
 accurate. `0.65` was chosen to catch the former without over-flagging the latter. This
 was calibrated on one document — revisit once more real scanned submissions are
 available.
+
+## Cloudflare Worker
+
+The glue between the two backend services — triggered by the Floater's
+`POST /uploads/:id/start`, fire-and-forwards to Pipeline's `POST /internal/process`,
+returns `202` immediately so neither service blocks on the other. Source lives in
+this repo under `/worker`:
+
+```
+worker/wrangler.toml
+worker/src/index.js
+```
+
+- **Live URL**: `https://testbench-worker.bdev5592.workers.dev`
+- **Account subdomain**: `bdev5592.workers.dev` (registered once via the Cloudflare
+  dashboard — a per-account, one-time step; not something `wrangler` can do for a
+  brand-new account)
+- No custom domain is wired up — `tech.seesunilag.com` is not currently a Cloudflare
+  zone under this account, so `workers.dev` is used instead. Fine for this use case:
+  it's an internal trigger URL, never exposed to students. Revisit if the domain is
+  ever added to Cloudflare.
+
+To redeploy after changing `worker/src/index.js`:
+
+```
+cd worker
+CLOUDFLARE_API_TOKEN=<token> npx wrangler deploy
+```
+
+Token needs Workers Scripts edit permission, scoped to the account (the
+"Edit Cloudflare Workers" template on the Cloudflare API Tokens page covers this).
+
+Verified end-to-end (Worker → Pipeline → Postgres write) during setup — this test
+also caught and fixed a real bug: Pipeline's Postgres connection wasn't configured
+for SSL, which Heroku Postgres requires. See `testbench-backend`'s commit history
+(`src/lib/db.ts`) for the fix.
 
 ## Budget
 

@@ -1,0 +1,6 @@
+name = "testbench-worker"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+[vars]
+PIPELINE_SERVICE_URL = "https://testbench-pipeline-0a144388bf78.herokuapp.com"
